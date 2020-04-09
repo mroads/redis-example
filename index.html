@@ -1,0 +1,287 @@
+<html>
+
+<head>
+    <script src="./socket.io.js"></script>
+    <script src="./lz-string.min.js"></script>
+    <style>
+        button {
+            width: 100px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body style="display:flex;flex:1;flex-direction:column;">
+    <div style="display:flex;width:100%;flex-direction: column;">
+        <h1>RedisDB websocket check.</h1>
+        <h2 id="socket-state">Socket state: CLOSE</h2>
+    </div>
+    <div style="display:flex;width:100%;flex-direction: row;margin-bottom: 10px;">
+        <input id="storeId" type="text" value="10000003" />
+        <input id="employeeId" type="text" value="1714" />
+    </div>
+    <div style="display:flex;width:100%;flex-direction: row;flex-wrap: wrap;">
+        <button id="ping" onclick="ping()">Ping</button>
+        <button id="getAllChecks" onclick="getAllCheckUpdates()">get all check updates</button>
+        <button id="getStoreChecks" onclick="getStoreChecks()">get store checks</button>
+        <button id="getStoreNotifications" onclick="getStoreNotifications()">get store notifications</button>
+        <button id="getEmployeeNotifications" onclick="getEmployeeNotifications()">get employee notifications</button>
+        <button id="subscribeNotifications" onclick="subscribeNotifications()">subscribe to store notifications</button>
+        <button id="subscribeNotifications" onclick="subscribeNotifications()">subscribe to employee
+            notifications</button>
+        <button id="getMenuData" onclick="getMenuData()">get menu data</button>
+        <button id="subscribeMenuUpdate" onclick="subscribeToMenuUpdate()">subscribe to menuUpdate</button>
+        <button id="subscribeStoreCheckUpdate" onclick="subscribeToStoreCheckUpdate()">subscribe to store
+            checkUpdate</button>
+        <button id="subscribeCheckUpdate" onclick="subscribeToCheckUpdate()">subscribe to employee checkUpdate</button>
+        <button id="getFireboardChecks" onclick="getFireboardChecks()">get fireboard checks</button>
+        <button id="subscribeFireboardChecks" onclick="subscribeFireboardChecks()">subscribe to fireboard checkUpdate</button>
+
+    </div>
+    <div style="flex-direction: row;">
+        <input id="configureCompressionCheckbox" type="checkbox" onClick="configureCompression()" value="false" />
+        <span>Toggle Compression </span>
+
+    </div>
+    <div id="response"></div>
+</body>
+
+
+<script>
+    const input = document.getElementById('input');
+    const storeId = document.getElementById('storeId');
+    const employeeId = document.getElementById('employeeId');
+    const button = document.getElementById('button');
+    const response = document.getElementById('response');
+    const socketState = document.getElementById('socket-state');
+    const configureCompressionCheckbox = document.getElementById('configureCompressionCheckbox');
+    const UTF16 = "UTF16";
+    const JSONFORMAT = "JSON";
+    // Websocket url of the RethinkClient socket
+    const socket = io(location.origin);
+
+    let compressionState = false;
+    let compressionType = JSONFORMAT;
+
+    socket.on('connect', function () {
+        console.info('connected');
+        socketState.innerHTML = 'SOCKET STATE CONNECTED';
+    });
+    socket.on('event', function (data) {
+        console.info('event', data);
+    });
+
+    socket.on('disconnect', function (reason) {
+        console.info('reason', reason);
+        socketState.innerHTML = 'SOCKET STATE DISCONNECTED';
+    });
+
+    socket.on('connect_timeout', function () {
+        socketState.innerHTML = 'SOCKET STATE TIMEOUT';
+    })
+
+    socket.on('ping', function () {
+        console.log('ping');
+    });
+
+    socket.on('pong', function (ms) {
+        console.log('pong ' + ms + "ms");
+    });
+
+    function configureCompression(...args) {
+        compressionState = !compressionState;
+    }
+
+    function subscribeToMenuUpdate() {
+        console.info('subscribing to menu update');
+        response.innerHTML = 'Fetching';
+        socket.emit('subscribeMenuUpdate', parseInt(storeId.value), (error, data) => {
+            console.info('response', error, data);
+            response.innerHTML = error || JSON.stringify(data);
+        });
+        const tableData = [];
+        socket.on('subscribeMenuUpdate', (data) => {
+            console.info('data', data);
+            data = decompressData(data);
+            tableData.unshift(data);
+            response.innerHTML = 'rows ' + tableData.length + '</br>' + JSON.stringify(tableData);
+            // socket.off(table.value + '-updates');
+        });
+    }
+
+
+    function getMenuData() {
+        console.info('getMenuData');
+        response.innerHTML = 'Fetching';
+        socket.emit('getMenu', parseInt(storeId.value), (error, data) => {
+            console.info('response', error, data);
+            data = decompressData(data);
+            response.innerHTML = error || JSON.stringify(data);
+        });
+    }
+
+
+    function subscribeToCheckUpdate() {
+        console.info('subscribing to check update');
+        response.innerHTML = 'Fetching';
+        socket.emit('subscribeEmployeeCheckUpdate', parseInt(storeId.value), parseInt(employeeId.value), (error, data) => {
+            console.info('response', error, data);
+            response.innerHTML = error || JSON.stringify(data);
+        });
+        const tableData = [];
+        socket.on('subscribeEmployeeCheckUpdate', (data) => {
+            console.info('data', data);
+            data = decompressData(data);
+            tableData.unshift(data);
+            response.innerHTML = 'rows ' + tableData.length + '</br>' + JSON.stringify(tableData);
+            // socket.off(table.value + '-updates');
+        });
+    }
+
+
+    function subscribeToStoreCheckUpdate() {
+        console.info('subscribeStoreCheckUpdate');
+        response.innerHTML = 'Fetching';
+        socket.emit('subscribeStoreCheckUpdate', parseInt(storeId.value), (error, data) => {
+            console.info('response', error, data);
+            response.innerHTML = error || JSON.stringify(data);
+        });
+        const tableData = [];
+        socket.on('subscribeStoreCheckUpdate', (data) => {
+            console.info('data', data);
+            data = decompressData(data);
+            tableData.unshift(data);
+            response.innerHTML = 'rows ' + tableData.length + '</br>' + JSON.stringify(tableData);
+            // socket.off(table.value + '-updates');
+        });
+    }
+
+
+    function getAllCheckUpdates() {
+        console.info('getting check updates', storeId.value, employeeId.value);
+        response.innerHTML = 'Fetching';
+        socket.emit('getAllCheckUpdates', parseInt(storeId.value), parseInt(employeeId.value), (error, data) => {
+            console.info('response', error, data);
+            console.info('data', data);
+            data = decompressData(data);
+            response.innerHTML = 'rows ' + data.length + '</br>' + JSON.stringify(data);
+        });
+    }
+
+
+    function getStoreChecks() {
+        console.info('getStoreChecks', storeId.value);
+        response.innerHTML = 'Fetching';
+        socket.emit('getStoreCheckUpdates', parseInt(storeId.value), (error, data) => {
+            console.info('response', error, data);
+            console.info('data', data);
+            data = decompressData(data);
+            response.innerHTML = 'rows ' + data.length + '</br>' + JSON.stringify(data);
+        });
+    }
+
+
+    function getStoreNotifications() {
+        console.info('getStoreNotifications', storeId.value);
+        response.innerHTML = 'Fetching';
+        socket.emit('getNotifications', parseInt(storeId.value), null, (error, data) => {
+            console.info('response', error, data);
+            console.info('data', data);
+            data = decompressData(data);
+            response.innerHTML = 'rows ' + data.length + '</br>' + JSON.stringify(data);
+        });
+    }
+
+    function getEmployeeNotifications() {
+        console.info('getEmployeeNotifications', storeId.value);
+        response.innerHTML = 'Fetching';
+        socket.emit('getNotifications', parseInt(storeId.value), { employeeId: parseInt(employeeId.value) }, (error, data) => {
+            console.info('response', error, data);
+            console.info('data', data);
+            data = decompressData(data);
+            response.innerHTML = 'rows ' + data.length + '</br>' + JSON.stringify(data);
+        });
+    }
+
+
+    function subscribeNotifications(employee) {
+        console.info('subscribeNotifications');
+        response.innerHTML = 'Fetching';
+        socket.emit('subscribeNotifications', parseInt(storeId.value), { employeeId: employee ? parseInt(employeeId.value) : null }, (error, data) => {
+            console.info('response', error, data);
+            response.innerHTML = error || JSON.stringify(data);
+        });
+        const tableData = [];
+        socket.on('subscribeNotifications', (data) => {
+            console.info('data', data);
+            data = decompressData(data);
+            tableData.unshift(data);
+            response.innerHTML = 'rows ' + tableData.length + '</br>' + JSON.stringify(tableData);
+            // socket.off(table.value + '-updates');
+        });
+    }
+
+
+    function subscribeFireboardChecks(employee) {
+        console.info('subscribeFireboardChecks');
+        response.innerHTML = 'Fetching';
+        socket.emit('subscribeFireboardChecks', parseInt(storeId.value), { employeeId: employee ? parseInt(employeeId.value) : null }, (error, data) => {
+            console.info('response', error, data);
+            response.innerHTML = error || JSON.stringify(data);
+        });
+        const tableData = [];
+        socket.on('subscribeFireboardChecks', (data) => {
+            console.info('data', data);
+            data = decompressData(data);
+            tableData.unshift(data);
+            response.innerHTML = 'rows ' + tableData.length + '</br>' + JSON.stringify(tableData);
+            // socket.off(table.value + '-updates');
+        });
+    }
+
+
+    function getFireboardChecks() {
+        console.info('getFireboardChecks', storeId.value);
+        response.innerHTML = 'Fetching';
+        socket.emit('getFireboardChecks', parseInt(storeId.value), null, (error, data) => {
+            console.info('response', error, data);
+            console.info('data', data);
+            data = decompressData(data);
+            response.innerHTML = 'rows ' + data.length + '</br>' + JSON.stringify(data);
+        });
+    }
+
+    function decompressData(socketData) {
+        if (typeof socketData === 'object') {
+            const {
+                data,
+                isCompressed,
+                compressionType,
+                dataType
+            } = socketData;
+            if (isCompressed) {
+                const decompressData = LZString.decompressFromUTF16(data);
+                if (dataType === 'object') {
+                    return JSON.parse(decompressData);
+                }
+                return decompressData;
+            }
+            return data;
+        }
+        return socketData || "";
+
+    }
+
+    function ping() {
+        console.info('pinging server');
+        response.innerHTML = 'Fetching';
+        socket.emit('rethink-ping', (error, data) => {
+            console.info('response', error, data);
+            response.innerHTML = 'Ping response - ' + JSON.stringify(data);
+        });
+    }
+
+</script>
+
+</html>
