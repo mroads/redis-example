@@ -18,15 +18,21 @@ export default class WebSocketController {
     }
 
     sendMessage = () => {
-        this.dbInstance.sendMsg(this.socket, 'send');
+        this.dbInstance.sendMsg((callbackFunction) => {
+            this.socket.on('send', callbackFunction);
+        });
     }
 
     getMessages = (callback) => {
-        this.dbInstance.getMessagesFromRedis(this.socket, 'messages', callback);
+        this.dbInstance.getMessagesFromRedis('messages', (event, message) => {
+            this.socket.emit(event, message, callback);
+        });
     }
 
     subscribeToMessages = (callback) => {
-        this.dbInstance.subscribeToMessagesFromRedis(this.socket, 'messages', callback);
+        this.dbInstance.subscribeToMessagesFromRedis('messages', (event, message) => {
+            this.socket.emit(event, message, callback);
+        });
     }
 
 }

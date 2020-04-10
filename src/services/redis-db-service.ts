@@ -1,33 +1,34 @@
 var Redis = require("ioredis");
-var redisClient = new Redis();
+var redisClient_publish = new Redis();
+var redisClient_subscribe = new Redis();
 const channel_history_max = 100;
 
 export default class DBService {
 
-    getMessagesFromRedis = (socket, event, callback) => {
-        console.log("getMessagesFromRedis invoked");
-        this.getDataBasedOnEvent(event, socket, callback);
-        // this.addRedisSubscriber(event, socket, callback);
+    getMessagesFromRedis = (event, callback) => {
+        this.getDataBasedOnEvent(event, callback);
+        // this.addRedisSubscriber(event, callback);
     }
 
-    subscribeToMessagesFromRedis = (socket, event, callback) => {
-        this.addRedisSubscriber(event, socket, callback);
+    subscribeToMessagesFromRedis = (event, callback) => {
+        this.addRedisSubscriber(event, callback);
     }
 
-    sendMsg = (socket, event) => {
-        console.log("send message invoked");
-        socket.on('send', function(message_text) {
-            console.log("message_text send msg", message_text);
+    sendMsg = (callback) => {
+        const callbackParam = function(message_text) {
+            console.log("message_text", message_text);
             var message = JSON.stringify({
                 message: message_text
             })
-            redisClient.zadd('messages', 3, message); 
-            redisClient.publish('messages', message);
-        });
+            redisClient_publish.zadd('messages', 3, message);
+            console.log("publishing data to messages channel", message);
+            redisClient_publish.publish('messages', message);
+        }
+        callback(callbackParam);
     }
 
-    getDataBasedOnEvent = (event, socket, callback) => {
-        var data = redisClient.zrange(event, -1 * channel_history_max, -1).then(function(result) {
+    getDataBasedOnEvent = (event, callback) => {
+        var data = redisClient_subscribe.zrange(event, -1 * channel_history_max, -1).then(function(result) {
             return result.map(function(x) {
             return JSON.parse(x);
             });
@@ -36,23 +37,22 @@ export default class DBService {
             var subscriptionData = values[0];
             console.log("subscriptionData", subscriptionData);
             subscriptionData.forEach(msg => {
-                socket.emit(event, msg, callback);
+                callback(event, msg);
             })
         }).catch(function(reason) {
             console.log('ERROR: ' + reason);
         });
     }
 
-    addRedisSubscriber = (event, socket, callback) => {
+    addRedisSubscriber = (event, callback) => {
         var client = new Redis();
         if (client) {
             client.subscribe(event);
             client.on('message', function(channel, message) {
-                socket.emit(event, JSON.parse(message), callback);
+                callback(event, JSON.parse(message));
             });
         } else {
             console.error('Redis client is not defined in '+event);
-            callback(new Error('Redis client is not defined'));
         }
     }
 

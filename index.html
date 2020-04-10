@@ -22,13 +22,13 @@
 <script>
     const inputMessage = document.getElementById('inputMessage');
     const response = document.getElementById('response');
-    const socket = io();
+    const socket = io(location.origin);
 
     socket.on('connect', function () {
-        console.info('connected');
+        console.log('connected');
     });
     socket.on('disconnect', function (reason) {
-        console.info('reason', reason);
+        console.log('reason', reason);
     });
     socket.on('messages', function(msg){
         console.log("get messages subscription", msg.message);
@@ -36,13 +36,13 @@
     });
 
     function sendMessage() {
+        console.log("sending message ", inputMessage.value);
         socket.emit('send', inputMessage.value);
     }
 
     function getMessages() {
-        console.info('subscribing to messages');
         socket.emit('messages', (error, data) => {
-            console.info('response', error, data);
+            console.log('response', error, data);
             response.innerHTML += data;
         });
     }
