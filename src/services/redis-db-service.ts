@@ -46,8 +46,8 @@ export default class DBService {
         if (redisClient_subscribe) {
             redisClient_subscribe.subscribe(event);
             redisClient_subscribe.on('message', function(channel, message) {
-                console.info('message',message);
-                callback(message);
+                console.info('message',JSON.parse(message));
+                callback(JSON.parse(message));
             });
         } else {
             console.error('Redis client is not defined in '+event);

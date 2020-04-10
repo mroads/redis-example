@@ -31,9 +31,9 @@ export default class WebSocketController {
         }
     }
 
-    sendCheckUpdate = (storeId,callback) => {
+    sendCheckUpdate = (storeId,id,callback) => {
         try{
-            check.checkHeaderId = new Date().getTime();
+            check.checkHeaderId = id;
             this.dbInstance.sendCheckUpdate(storeId,check);
             callback(null,'success');
         } catch(error){

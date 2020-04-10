@@ -26,8 +26,21 @@
     const response = document.getElementById('response');
     const socket = io(location.origin);
 
+    const checks = {};
+
     socket.on('connect', function () {
         console.log('connected');
+        // subscribeToStore();
+        // let count = 0;
+        // const interval = setInterval(()=>{
+        //     if(count>=10){
+        //         clearInterval(interval);
+        //     }
+        //     const id = new Date().getTime();
+        //     checks[id] = {sentAt:new Date()};
+        //     sendCheckUpdate(id);
+        //     count++;
+        // },1000)
     });
     socket.on('disconnect', function (reason) {
         console.log('reason', reason);
@@ -54,12 +67,16 @@
             console.log('response subscribeToStore', error, data);
             socket.on('subscribeToStore',(data)=>{
                 response.innerHTML = data;
+                const existingCheck = checks[data.checkHeaderId];
+                console.info('data.checkHeaderId',data);
+                checks[data.checkHeaderId] = {...existingCheck,...data,receivedAt:new Date()}
+                console.info('checks',Object.keys(checks).length);
             })
         })
     }
 
-    function sendCheckUpdate(){
-        socket.emit('sendCheckUpdate',102,(error,data)=>{
+    function sendCheckUpdate(id){
+        socket.emit('sendCheckUpdate',102,id||new Date().getTime(),(error,data)=>{
             console.log('response sendCheckUpdate', error, data);
         })
     }
