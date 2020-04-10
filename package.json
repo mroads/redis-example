@@ -8,7 +8,7 @@
   "scripts": {
     "compile": "npm run copy",
     "build": "tsc & npm run compile",
-    "start": "tsc --watch & nodemon dist & npm run compile",
+    "start": "tsc --watch & npm run compile & nodemon dist",
     "test": "tsc && mocha dist/**/*.spec.js",
     "lint": "eslint src --ext ts",
     "tsc": "tsc",
