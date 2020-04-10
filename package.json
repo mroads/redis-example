@@ -7,12 +7,12 @@
   "license": "ISC",
   "scripts": {
     "compile": "npm run copy",
-    "build": "tsc",
+    "build": "tsc & npm run compile",
     "start": "tsc --watch & nodemon dist & npm run compile",
     "test": "tsc && mocha dist/**/*.spec.js",
     "lint": "eslint src --ext ts",
     "tsc": "tsc",
-    "copy": "copyfiles --flat keys/* dist/keys"
+    "copy": "copyfiles index.html keys/*  dist/keys"
   },
   "dependencies": {
     "express": "4.15.3",
