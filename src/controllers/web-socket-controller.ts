@@ -1,4 +1,5 @@
 import DBService from '../services/redis-db-service';
+import check from '../data/check';
 
 export default class WebSocketController {
 
@@ -12,27 +13,32 @@ export default class WebSocketController {
     }
 
     initializeListeners() {
-        this.socket.on('messages', this.getMessages);
-        this.socket.on('send', this.sendMessage);
-        // this.socket.on('subscribeToMessages', this.subscribeToMessages);
+        // this.socket.on('messages', this.getMessages);
+        // this.socket.on('send', this.sendMessage);
+        this.socket.on('subscribeToStore', this.subscribeToStore);
+        this.socket.on('sendCheckUpdate', this.sendCheckUpdate);
     }
 
-    sendMessage = () => {
-        this.dbInstance.sendMsg((callbackFunction) => {
-            this.socket.on('send', callbackFunction);
-        });
+
+    subscribeToStore = (storeId,callback) => {
+        try{
+            this.dbInstance.subscribeToStore(storeId,(data)=>{
+                this.socket.emit('subscribeToStore',data);
+            });
+            callback(null,'success');
+        } catch(error){
+            callback(error,null);
+        }
     }
 
-    getMessages = (callback) => {
-        this.dbInstance.getMessagesFromRedis('messages', (event, message) => {
-            this.socket.emit(event, message, callback);
-        });
-    }
-
-    subscribeToMessages = (callback) => {
-        this.dbInstance.subscribeToMessagesFromRedis('messages', (event, message) => {
-            this.socket.emit(event, message, callback);
-        });
+    sendCheckUpdate = (storeId,callback) => {
+        try{
+            check.checkHeaderId = new Date().getTime();
+            this.dbInstance.sendCheckUpdate(storeId,check);
+            callback(null,'success');
+        } catch(error){
+            callback(error,null);
+        }
     }
 
 }

@@ -15,6 +15,8 @@
         <input id="inputMessage" type="text" />
         <button id="send" onclick="sendMessage()">Send</button>
         <button id="getMessages" onclick="getMessages()">Get Messages</button>
+        <button id="sendCheckUpdate" onclick="sendCheckUpdate()">Send check update</button>
+        <button id="subscribeToStore" onclick="subscribeToStore()">Subscribe to store</button>
     </div>
     <div id="response"></div>
 </body>
@@ -30,21 +32,36 @@
     socket.on('disconnect', function (reason) {
         console.log('reason', reason);
     });
-    socket.on('messages', function(msg){
-        console.log("get messages subscription", msg.message);
-        response.innerHTML += '     ' +msg.message;
-    });
+    // socket.on('messages', function(msg){
+    //     console.log("get messages subscription", msg.message);
+    //     response.innerHTML += '     ' +msg.message;
+    // });
 
-    function sendMessage() {
-        console.log("sending message ", inputMessage.value);
-        socket.emit('send', inputMessage.value);
+    // function sendMessage() {
+    //     console.log("sending message ", inputMessage.value);
+    //     socket.emit('send', inputMessage.value);
+    // }
+
+    // function getMessages() {
+    //     socket.emit('messages', (error, data) => {
+    //         console.log('response', error, data);
+    //         response.innerHTML += data;
+    //     });
+    // }
+
+    function subscribeToStore(){
+        socket.emit('subscribeToStore',102,(error,data)=>{
+            console.log('response subscribeToStore', error, data);
+            socket.on('subscribeToStore',(data)=>{
+                response.innerHTML = data;
+            })
+        })
     }
 
-    function getMessages() {
-        socket.emit('messages', (error, data) => {
-            console.log('response', error, data);
-            response.innerHTML += data;
-        });
+    function sendCheckUpdate(){
+        socket.emit('sendCheckUpdate',102,(error,data)=>{
+            console.log('response sendCheckUpdate', error, data);
+        })
     }
 
 </script>
