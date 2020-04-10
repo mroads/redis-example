@@ -1,6 +1,6 @@
 var Redis = require("ioredis");
-var redisClient_publish = new Redis();
-var redisClient_subscribe = new Redis();
+var redisClient_publish = new Redis(process.env.REDIS_URL);
+var redisClient_subscribe = new Redis(process.env.REDIS_URL);
 const channel_history_max = 100;
 
 export default class DBService {
@@ -43,10 +43,9 @@ export default class DBService {
     // }
 
     addRedisSubscriber = (event, callback) => {
-        var client = new Redis();
-        if (client) {
-            client.subscribe(event);
-            client.on('message', function(channel, message) {
+        if (redisClient_subscribe) {
+            redisClient_subscribe.subscribe(event);
+            redisClient_subscribe.on('message', function(channel, message) {
                 console.info('message',message);
                 callback(message);
             });
@@ -61,11 +60,10 @@ export default class DBService {
     }
     
     sendCheckUpdate = (storeId,data) => {
-        var client = new Redis();
         console.log("message_text", storeId);
-        client.zadd(storeId, 3, JSON.stringify(data));
+        redisClient_publish.zadd(storeId, 3, JSON.stringify(data));
         console.log("publishing data to messages channel", data);
-        client.publish(storeId, JSON.stringify(data));
+        redisClient_publish.publish(storeId, JSON.stringify(data));
     }
 
 }
